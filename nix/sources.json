@@ -1,0 +1,26 @@
+{
+    "nix-parsec": {
+        "branch": "master",
+        "description": null,
+        "homepage": "",
+        "owner": "nprindle",
+        "repo": "nix-parsec",
+        "rev": "a28e73fce98227cc46edfdbb8518697c0982e034",
+        "sha256": "1v1krqzvpmb39s42m5gg2p7phhp4spd0vkb4wlhfkgbhi20dk5w7",
+        "type": "tarball",
+        "url": "https://github.com/nprindle/nix-parsec/archive/a28e73fce98227cc46edfdbb8518697c0982e034.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "nixpkgs": {
+        "branch": "nixpkgs-unstable",
+        "description": "Nix Packages collection",
+        "homepage": "",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "a39ee95a86b1fbdfa9edd65f3810b23d82457241",
+        "sha256": "11sk5hz51189g6a5ahq3s1y65145ra8kcgzfjkmrjp1jzn7h68q8",
+        "type": "tarball",
+        "url": "https://github.com/nixos/nixpkgs/archive/a39ee95a86b1fbdfa9edd65f3810b23d82457241.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    }
+}
