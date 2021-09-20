@@ -8,59 +8,74 @@ in
 let
 space =
   lexer.space
-    (parsec.many1 (parsec.satisfy (i: i == " " || i == "\n"))) # whitespace
+    (parsec.many1 (parsec.satisfy (i: i == " " || i == "\n" || i == "\t"))) # whitespace
     (lexer.skipLineComment ";;") # line comments
     parsec.fail; # we don't have block comments
 
 symbol =
   parsec.fmap
     (xs: { __nixlisp_term = true; type = "symbol"; value = builtins.concatStringsSep "" xs; })
-    (parsec.many1 (parsec.satisfy (i:
+    (lexeme (parsec.many1 (parsec.satisfy (i:
       (i >= "a" && i <= "z")
-        || i == "_"
-    )));
+        || (i >= "A" && i <= "Z")
+        || i == "_" || i == "-" || i == "?"
+    ))));
 
-nil =
-  parsec.fmap
-    (_: null)
-    (parsec.string "nil");
+lexeme = lexer.lexeme space;
+string = lexer.symbol space;
 
 number =
-  lexer.decimal;
+  lexeme lexer.decimal;
+
+stringLit =
+  lexeme lexer.stringLit;
 
 bool =
   (parsec.alt
-    (parsec.fmap (_: true) (parsec.string "true"))
-    (parsec.fmap (_: false) (parsec.string "false")));
+    (parsec.fmap (_: true) (string "true"))
+    (parsec.fmap (_: false) (string "false")));
 
 atom =
   parsec.choice
-    [ nil
-      symbol
+    [ symbol
+      stringLit
       number
     ];
 
 list =
-  (parsec.between
-    (parsec.skipThen (parsec.string "(") space)
-    (parsec.skipThen space (parsec.string ")"))
-    ((parsec.sepBy expression space)));
+  let inner =
+        parsec.alt
+          (parsec.fmap (_: null) (string ")"))
+          (parsec.bind
+            expression
+            (car:
+              (parsec.fmap
+                (cdr: { __nixlisp_term=true; type = "cons"; value = {inherit car cdr;};})
+                (parsec.alt
+                  (parsec.between (string ".") (string ")") expression)
+                  inner
+                )
+              )
+            )
+          );
+   in parsec.skipThen (string "(") inner;
 
-expression = parsec.alt atom list;
+expression = parsec.choice [ atom list ];
+
+program =
+  parsec.sepBy expression space;
 
 parser =
   parsec.thenSkip
-    (parsec.between space space expression)
+    (parsec.between space space program)
     parsec.eof;
 
-in
-
-rec {
+in  rec {
   parseString = s:
     let result = parsec.runParser parser s;
     in  if result.type == "success"
         then result.value
-        else throw "parse failed: ${builtins.toJSON result.value};";
+        else throw "parse failed; ${builtins.toJSON result.value}";
 
   parseFile = f: parseString (builtins.readFile f);
 

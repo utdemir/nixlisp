@@ -1,1 +1,31 @@
-(define add (lambda (i j) (__prim_plus i j)))
+(define null __prim_null)
+(define null? (lambda (i) (__prim_equals i null)))
+
+(define car (lambda (i) (__prim_car i)))
+(define cdr (lambda (i) (__prim_cdr i)))
+
+(define add (lambda xs (fold-left __prim_plus 0 xs)))
+(define mul (lambda xs (fold-left __prim_product 1 xs)))
+
+(define attr
+  (lambda (attrset . path)
+    (begin
+      (define go
+        (lambda (acc xs)
+          (if (null? xs)
+            acc
+            (go (__prim_getAttr (car xs) acc) (cdr xs))
+          )
+        )
+      )
+      (go attrset path)
+    )
+  )
+)
+
+(define fold-left (lambda (f init seq)
+   (if (null? seq)
+       init
+       (fold-left f
+                  (f init (car seq))
+                  (cdr seq)))))
