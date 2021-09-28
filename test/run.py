@@ -27,13 +27,17 @@ def get_test_cases():
    return cases
 
 def eval_expression(expr):
-   output = subprocess.check_output([
+   result = subprocess.run([
      "nix-instantiate" , "--eval", "--strict", "--json", "-E",
      "{ input }: (import ./.).eval {} input",
      "--argstr", "input", expr
-   ])
-   output = json.loads(output)
-   return output
+   ], capture_output=True)
+   if result.returncode == 0:
+      output = json.loads(result.stdout)
+      return output
+   else:
+      output = result.stderr.decode().splitlines()
+      return output
 
 def serialize_obj(obj):
    return json.dumps(obj, sort_keys=True, indent=2)
