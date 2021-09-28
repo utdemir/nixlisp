@@ -1,0 +1,6 @@
+(define double (lambda (x) (mul x 2)))
+(double 21)
+
+===
+
+42
