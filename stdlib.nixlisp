@@ -4,6 +4,8 @@
 (define car (lambda (i) (__prim_car i)))
 (define cdr (lambda (i) (__prim_cdr i)))
 
+(define cons (lambda xs xs))
+
 (define add (lambda xs (fold-left __prim_plus 0 xs)))
 (define mul (lambda xs (fold-left __prim_product 1 xs)))
 
