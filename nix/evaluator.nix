@@ -103,7 +103,7 @@ evaluate = env: expr:
         let c = matchList ["args" "body"] cdr;
             args = c.args;
             body = c.body;
-            result = { __nixlisp_term = true; type = "lambda"; value = { inherit args body; }; };
+            result = { __nixlisp_term = true; type = "lambda"; value = { inherit args body env; }; };
         in { inherit env result; }
       else
         let fun = (evaluate env expr.value.car).result; # TODO actually run evaluate here, in case the first argument is a callable
@@ -132,7 +132,7 @@ evaluate = env: expr:
                       # varargs
                       let binding = assertSymbol bindings;
                       in env // { "${binding}" = evaluateList env args; };
-                  innerEnv = go env fun.value.args cdr;
+                  innerEnv = go (env // fun.value.env) fun.value.args cdr;
               in { inherit env; result = (evaluate innerEnv fun.value.body).result; }
             else if exprType fun == "macro" then
               throw "TODO"

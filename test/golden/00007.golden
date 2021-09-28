@@ -1,0 +1,8 @@
+(define x 1)
+(define f (lambda (i) (add i x)))
+(define x 2)
+(f 0)
+
+===
+
+1
