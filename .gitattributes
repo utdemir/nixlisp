@@ -1,0 +1,4 @@
+*.golden linguist-language=Scheme
+*.nixlisp linguist-language=Scheme
+nix/sources.nix linguist-generated
+nix/sources.json linguist-generated
