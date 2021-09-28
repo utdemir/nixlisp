@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import sys
 import glob
 import json
 import os.path
@@ -53,9 +54,12 @@ def run_test_case(case):
 def indent(s, cols=2):
    return "\n".join([" " * cols + i for i in s.splitlines()])
 
+cases = get_test_cases()
+cases.sort(key=lambda i: len(i.expression))
 for case in sorted(get_test_cases(), key=lambda i: len(i.expression)):
    result = run_test_case(case)
    if not result.success:
+       print()
        print("When running:")
        print(indent(result.test_case.expression))
        print("Expected:")
@@ -63,5 +67,8 @@ for case in sorted(get_test_cases(), key=lambda i: len(i.expression)):
        print("But got:")
        print(indent(serialize_obj(result.actual)))
        break
+   print(".", end="")
+   sys.stdout.flush()
 else:
+   print()
    print("Tests successful.")
