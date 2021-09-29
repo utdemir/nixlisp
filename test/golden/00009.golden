@@ -1,0 +1,11 @@
+(define f (lambda _ x))
+(define x 1)
+(define g (lambda _ (begin
+  (define x 2)
+  (f)
+)))
+(g)
+
+===
+
+2
