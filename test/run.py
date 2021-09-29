@@ -5,6 +5,7 @@ import glob
 import json
 import os.path
 import subprocess
+import concurrent.futures
 from collections import namedtuple
 
 TESTS_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -56,19 +57,22 @@ def indent(s, cols=2):
 
 cases = get_test_cases()
 cases.sort(key=lambda i: len(i.expression))
-for case in sorted(get_test_cases(), key=lambda i: len(i.expression)):
-   result = run_test_case(case)
-   if not result.success:
+
+with concurrent.futures.ProcessPoolExecutor() as executor:
+    futures = [executor.submit(run_test_case, case) for case in cases]
+    for f in futures:
+       result = f.result()
+       if not result.success:
+           print()
+           print("When running:")
+           print(indent(result.test_case.expression))
+           print("Expected:")
+           print(indent(serialize_obj(result.test_case.expected)))
+           print("But got:")
+           print(indent(serialize_obj(result.actual)))
+           break
+       print(".", end="")
+       sys.stdout.flush()
+    else:
        print()
-       print("When running:")
-       print(indent(result.test_case.expression))
-       print("Expected:")
-       print(indent(serialize_obj(result.test_case.expected)))
-       print("But got:")
-       print(indent(serialize_obj(result.actual)))
-       break
-   print(".", end="")
-   sys.stdout.flush()
-else:
-   print()
-   print("Tests successful.")
+       print("Tests successful.")
