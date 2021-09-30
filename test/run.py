@@ -36,20 +36,20 @@ def eval_expression(expr):
    ], capture_output=True)
    if result.returncode == 0:
       output = json.loads(result.stdout)
-      return output
+      return True, output
    else:
       output = result.stderr.decode().splitlines()
-      return output
+      return False, output
 
 def serialize_obj(obj):
    return json.dumps(obj, sort_keys=True, indent=2)
 
 def run_test_case(case):
-   expected = eval_expression(case.expected_expression)
-   actual = eval_expression(case.expression)
+   success, expected = eval_expression(case.expected_expression)
+   _, actual = eval_expression(case.expression)
    return TestResult(
      test_case = case,
-     success = serialize_obj(actual) == serialize_obj(expected),
+     success = success and serialize_obj(actual) == serialize_obj(expected),
      actual = actual,
      expected = expected
    )
