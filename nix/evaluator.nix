@@ -136,7 +136,7 @@ evaluate = env: expr:
             else if exprType fun == "macro" then
               throw "TODO"
             else if exprType fun == "attrset" then
-              # attrset's behave like functions, they take a string or a symbol and do a lookup.
+              # attrset's should behave like functions, they take a string or a symbol and do a lookup.
               throw "TODO"
             else
               throw "Tried to call ${car}, but it is a ${exprType car}."
@@ -147,8 +147,13 @@ evaluateProgram = env: program:
   then lib.foldl (acc: x: evaluate acc.env x) { inherit env; value = null; } (program)
   else throw "invariant violation: program is not a list";
 
-# Build the standard environment
+nixify = x:
+  let ty = exprType x;
+  in if ty == "symbol" then x.value
+      else if ty == "cons" then throw "TODO"
+      else throw "TODO";
 
+# Build the standard environment
 
 prims = {
   # values
