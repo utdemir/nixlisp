@@ -117,6 +117,9 @@ evaluate = env: expr:
               # when we have a lambda, we create a new env; assigning (evaluated) arguments to the bindings.
               # if the last binding is null (for a list), every argument is assigned to a binding.
               # if the last binding is not null (dotted pair), rest of the arguments is assigned to last binding (varargs).
+              #
+              # TODO: I think, after we implement the macros we can make lambda's only of the form (lambda xs ...), and offload destructuring
+              # of the argument to a macro.
               let go = env: bindings: args:
                     if bindings == null then
                       if args == null
@@ -134,6 +137,9 @@ evaluate = env: expr:
                   innerEnv = go (env // fun.value.env) fun.value.args cdr;
               in { inherit env; result = (evaluate innerEnv fun.value.body).result; }
             else if exprType fun == "macro" then
+              throw "TODO"
+            else if exprType fun == "attrset" then
+              # attrset's behave like functions, they take a string or a symbol and do a lookup.
               throw "TODO"
             else
               throw "Tried to call ${car}, but it is a ${exprType car}."
