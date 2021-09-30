@@ -146,8 +146,13 @@ evaluateProgram = env: program:
 prims = {
   # values
   __prim_null = null;
+  __prim_true = true;
+  __prim_false = false;
   __prim_vector_empty = [];
   __prim_attrset_empty = {};
+
+  __prim_symbol_name = x: assertSymbol x;
+  __prim_expr_type = x: exprType x;
 
   # operators
   __prim_plus = i: j: i + j;
@@ -161,7 +166,7 @@ prims = {
 
   # builtins
   __prim_builtins = builtins;
-  __prim_getAttr = builtins.getAttr; # we need this directly to access the builtins
+  __prim_get_attr = builtins.getAttr; # we need this directly to access the builtins
 
   # conversion
   # __prim_lambda_to_nix = x:

@@ -6,8 +6,18 @@
 
 (define cons (lambda xs xs))
 
+(define true __prim_true)
+(define false __prim_false)
+
 (define add (lambda xs (fold-left __prim_plus 0 xs)))
 (define mul (lambda xs (fold-left __prim_product 1 xs)))
+(define eq? (lambda (x y) (__prim_equals x y)))
+
+(define symbol-name (lambda (x) (__prim_symbol_name x)))
+
+(define cons? (lambda (x) (eq? (__prim_expr_type x) "cons")))
+(define int? (lambda (x) (eq? (__prim_expr_type x) "int")))
+(define attrset? (lambda (x) (eq? (__prim_expr_type x) "attrset")))
 
 (define attr
   (lambda (attrset . path)
@@ -16,7 +26,7 @@
         (lambda (acc xs)
           (if (null? xs)
             acc
-            (go (__prim_getAttr (car xs) acc) (cdr xs))
+            (go (__prim_get_attr (car xs) acc) (cdr xs))
           )
         )
       )
