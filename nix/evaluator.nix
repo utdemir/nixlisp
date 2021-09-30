@@ -51,8 +51,6 @@ mapList = f: xs:
 
 evaluateList = env: mapList (x: (evaluate env x).result);
 
-mkSymbol = str: { __nixlisp_term = true; type = "symbol"; value = str; };
-
 evaluate = env: expr:
   if exprType expr == "number" then { inherit env; result = expr; }
   else if exprType expr == "null" then { inherit env; result = null; }
@@ -64,31 +62,31 @@ evaluate = env: expr:
       car = expr.value.car;
       cdr = expr.value.cdr;
     in
-      if car == mkSymbol "define" then
+      if car == lib.mkSymbol "define" then
         # 'define' evaluates the second arguments and assigns it to the first symbol
         let c  = matchList ["name" "value"] cdr;
             name = assertSymbol c.name;
             value = (evaluate env c.value).result;
         in  { env = env // { ${name} = value; }; result = null; }
-      else if car == mkSymbol "quote" then
+      else if car == lib.mkSymbol "quote" then
         # 'quote ' returns the only argument without evaluating
         let c  = matchList ["arg"] cdr;
         in  { inherit env; result = c.arg; }
-      else if car == mkSymbol "define-macro" then
+      else if car == lib.mkSymbol "define-macro" then
         # 'define-macro' creates a 'macro' object carrying the lambda.
         let c = matchList ["name" "lambda"] cdr;
             name = assertSymbol c.name;
             lambda = evaluate env c.lambda; # TODO: error out when this is not actually a lambda
             value = { __nixlisp_term = true; type = "macro"; value = lambda; };
         in { env = env // { ${name} = value; }; result = null; }
-      else if car == mkSymbol "if" then
+      else if car == lib.mkSymbol "if" then
         # if evaluates the first argument, if null or false, evaluates & returns the third; else the second
         let c = matchList ["cond" "if_t" "if_f"] cdr;
             cond = (evaluate env c.cond).result;
             branch = if cond == null || cond == false then c.if_f else c.if_t;
             result = (evaluate env branch).result;
         in { inherit env result; }
-      else if car == mkSymbol "begin" then
+      else if car == lib.mkSymbol "begin" then
         # evaluates all arguments one after another in the same environment
         let go = prev: xs:
               if xs == null
@@ -98,7 +96,7 @@ evaluate = env: expr:
                    in  go curr c.cdr;
             result = (go { inherit env; result = null; } cdr).result;
         in { inherit env result; }
-      else if car == mkSymbol "lambda" then
+      else if car == lib.mkSymbol "lambda" then
         # 'lambda' creates a 'lambda' object carrying the arguments and the body.
         let c = matchList ["args" "body"] cdr;
             args = c.args;
