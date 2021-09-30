@@ -117,9 +117,6 @@ evaluate = env: expr:
               # when we have a lambda, we create a new env; assigning (evaluated) arguments to the bindings.
               # if the last binding is null (for a list), every argument is assigned to a binding.
               # if the last binding is not null (dotted pair), rest of the arguments is assigned to last binding (varargs).
-              #
-              # TODO: I think, after we implement the macros we can make lambda's only of the form (lambda xs ...), and offload destructuring
-              # of the argument to a macro.
               let go = env: bindings: args:
                     if bindings == null then
                       if args == null
