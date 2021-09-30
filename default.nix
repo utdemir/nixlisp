@@ -1,8 +1,8 @@
 let
   sources = import ./nix/sources.nix;
-  lib = (import sources.nixpkgs {}).lib;
   nix-parsec = import sources.nix-parsec;
 
+  lib = import ./nix/lib.nix;
   parser = import ./nix/parser.nix { inherit lib nix-parsec; };
   evaluator = import ./nix/evaluator.nix { inherit lib parser; };
 in
