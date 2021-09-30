@@ -10,8 +10,8 @@ from collections import namedtuple
 
 TESTS_DIR = os.path.dirname(os.path.realpath(__file__))
 
-TestCase = namedtuple("TestCase", [ "expression", "expected" ])
-TestResult = namedtuple("TestResult", [ "test_case", "success", "actual" ])
+TestCase = namedtuple("TestCase", [ "expression", "expected_expression" ])
+TestResult = namedtuple("TestResult", [ "test_case", "success", "expected", "actual" ])
 
 def read_test_case(fp):
    with open(fp, "r") as f:
@@ -19,9 +19,9 @@ def read_test_case(fp):
 
    [expr, expected] = contents.rsplit("\n=", maxsplit=-1)
    expr = expr.strip("= \n")
-   expected = eval_expression(expected.strip("= \n"))
+   expected = expected.strip("= \n")
 
-   return TestCase(expression=expr, expected=expected)
+   return TestCase(expression=expr, expected_expression=expected)
 
 def get_test_cases():
    files = glob.glob(os.path.join(TESTS_DIR, "golden/*.golden"))
@@ -45,11 +45,13 @@ def serialize_obj(obj):
    return json.dumps(obj, sort_keys=True, indent=2)
 
 def run_test_case(case):
+   expected = eval_expression(case.expected_expression)
    actual = eval_expression(case.expression)
    return TestResult(
      test_case = case,
-     success = serialize_obj(actual) == serialize_obj(case.expected),
-     actual = actual
+     success = serialize_obj(actual) == serialize_obj(expected),
+     actual = actual,
+     expected = expected
    )
 
 def indent(s, cols=2):
@@ -67,7 +69,7 @@ with concurrent.futures.ProcessPoolExecutor() as executor:
            print("When running:")
            print(indent(result.test_case.expression))
            print("Expected:")
-           print(indent(serialize_obj(result.test_case.expected)))
+           print(indent(serialize_obj(result.expected)))
            print("But got:")
            print(indent(serialize_obj(result.actual)))
            executor.shutdown(cancel_futures=True)
