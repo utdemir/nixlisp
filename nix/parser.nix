@@ -50,7 +50,7 @@ list =
             expression
             (car:
               (parsec.fmap
-                (cdr: { __nixlisp_term=true; type = "cons"; value = {inherit car cdr;};})
+                (cdr: lib.mkCons car cdr)
                 (parsec.alt
                   (parsec.between (string ".") (string ")") expression)
                   inner

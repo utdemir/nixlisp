@@ -44,10 +44,7 @@ mapList = f: xs:
   then null
   else
     let c = assertCons xs;
-    in  {  __nixlisp_term = true;
-           type = "cons";
-           value = { car = f c.car; cdr = mapList f c.cdr; };
-        };
+    in  lib.mkCons (f c.car) (mapList f c.cdr);
 
 evaluateList = env: mapList (x: (evaluate env x).result);
 
@@ -77,7 +74,7 @@ evaluate = env: expr:
         let c = matchList ["name" "lambda"] cdr;
             name = assertSymbol c.name;
             lambda = evaluate env c.lambda; # TODO: error out when this is not actually a lambda
-            value = { __nixlisp_term = true; type = "macro"; value = lambda; };
+            value = lib.mkTerm "macro" lambda;
         in { env = env // { ${name} = value; }; result = null; }
       else if car == lib.mkSymbol "if" then
         # if evaluates the first argument, if null or false, evaluates & returns the third; else the second
@@ -101,7 +98,7 @@ evaluate = env: expr:
         let c = matchList ["args" "body"] cdr;
             args = c.args;
             body = c.body;
-            result = { __nixlisp_term = true; type = "lambda"; value = { inherit args body env; }; };
+            result = lib.mkTerm "lambda" { inherit args body env; };
         in { inherit env result; }
       else
         let fun = (evaluate env expr.value.car).result; # TODO actually run evaluate here, in case the first argument is a callable
