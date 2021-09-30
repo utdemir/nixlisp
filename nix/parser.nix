@@ -60,7 +60,12 @@ list =
           );
    in parsec.skipThen (string "(") inner;
 
-expression = parsec.choice [ atom list ];
+expression = parsec.choice [ atom list quoted_expression ];
+
+quoted_expression =
+  parsec.fmap
+    (expr: lib.mkCons (lib.mkSymbol "quote") (lib.mkCons expr null))
+    (parsec.skipThen (parsec.string "'") expression);
 
 program =
   parsec.sepBy expression space;
