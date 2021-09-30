@@ -8,9 +8,9 @@ import subprocess
 import concurrent.futures
 from collections import namedtuple
 
-TESTS_DIR = os.path.dirname(os.path.realpath(__file__))
+TESTS_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "golden")
 
-TestCase = namedtuple("TestCase", [ "expression", "expected_expression" ])
+TestCase = namedtuple("TestCase", [ "fname", "expression", "expected_expression" ])
 TestResult = namedtuple("TestResult", [ "test_case", "success", "expected", "actual" ])
 
 def read_test_case(fp):
@@ -21,16 +21,16 @@ def read_test_case(fp):
    expr = expr.strip("= \n")
    expected = expected.strip("= \n")
 
-   return TestCase(expression=expr, expected_expression=expected)
+   return TestCase(fname=os.path.basename(fp), expression=expr, expected_expression=expected)
 
 def get_test_cases():
-   files = glob.glob(os.path.join(TESTS_DIR, "golden/*.golden"))
+   files = glob.glob(os.path.join(TESTS_DIR, "*.golden"))
    cases = [read_test_case(i) for i in files]
    return cases
 
 def eval_expression(expr):
    result = subprocess.run([
-     "nix-instantiate" , "--eval", "--strict", "--json", "-E",
+     "nix-instantiate" , "--eval", "--strict", "--json", "--show-trace", "-E",
      "{ input }: (import ./.).eval {} input",
      "--argstr", "input", expr
    ], capture_output=True)
@@ -57,25 +57,29 @@ def run_test_case(case):
 def indent(s, cols=2):
    return "\n".join([" " * cols + i for i in s.splitlines()])
 
-cases = get_test_cases()
-cases.sort(key=lambda i: len(i.expression))
+if __name__ == '__main__':
+    cases = get_test_cases()
+    cases.sort(key=lambda i: len(i.expression))
 
-with concurrent.futures.ProcessPoolExecutor() as executor:
-    futures = [executor.submit(run_test_case, case) for case in cases]
-    for f in futures:
-       result = f.result()
-       if not result.success:
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        futures = [executor.submit(run_test_case, case) for case in cases]
+        for f in futures:
+           result = f.result()
+           if not result.success:
+               print()
+               print("Failed:")
+               print(indent(result.test_case.fname))
+               print("When running:")
+               print(indent(result.test_case.expression))
+               print("Expected:")
+               print(indent(serialize_obj(result.expected)))
+               print("But got:")
+               print(indent(serialize_obj(result.actual)))
+               executor.shutdown(cancel_futures=True)
+               break
+           print(".", end="")
+           sys.stdout.flush()
+        else:
            print()
-           print("When running:")
-           print(indent(result.test_case.expression))
-           print("Expected:")
-           print(indent(serialize_obj(result.expected)))
-           print("But got:")
-           print(indent(serialize_obj(result.actual)))
-           executor.shutdown(cancel_futures=True)
-           break
-       print(".", end="")
-       sys.stdout.flush()
-    else:
-       print()
-       print("Tests successful.")
+           print("Golden tests successful.")
+
