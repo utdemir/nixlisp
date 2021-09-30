@@ -70,6 +70,7 @@ with concurrent.futures.ProcessPoolExecutor() as executor:
            print(indent(serialize_obj(result.test_case.expected)))
            print("But got:")
            print(indent(serialize_obj(result.actual)))
+           executor.shutdown(cancel_futures=True)
            break
        print(".", end="")
        sys.stdout.flush()
