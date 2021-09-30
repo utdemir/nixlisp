@@ -69,6 +69,10 @@ evaluate = env: expr:
         # 'quote ' returns the only argument without evaluating
         let c  = matchList ["arg"] cdr;
         in  { inherit env; result = c.arg; }
+      else if car == lib.mkSymbol "eval" then
+        # 'eval' evaluates its only argument, dual of quote
+        let c = matchList ["arg"] cdr;
+        in  evaluate env (evaluate env c.arg).result
       else if car == lib.mkSymbol "define-macro" then
         # 'define-macro' creates a 'macro' object carrying the lambda.
         let c = matchList ["name" "lambda"] cdr;
