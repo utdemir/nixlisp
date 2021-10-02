@@ -29,11 +29,15 @@ def get_test_cases():
    return cases
 
 def eval_expression(expr):
-   result = subprocess.run([
-     "nix-instantiate" , "--eval", "--strict", "--json", "--show-trace", "-E",
-     "{ input }: (import ./.).eval {} input",
-     "--argstr", "input", expr
-   ], capture_output=True)
+   try:
+       result = subprocess.run([
+         "nix-instantiate" , "--eval", "--strict", "--json", "--show-trace", "-E",
+         "{ input }: (import ./.).eval {} input",
+         "--argstr", "input", expr
+       ], capture_output=True, timeout=1)
+   except subprocess.TimeoutExpired:
+      return False, "Timed out."
+
    if result.returncode == 0:
       output = json.loads(result.stdout)
       return True, output
@@ -57,29 +61,64 @@ def run_test_case(case):
 def indent(s, cols=2):
    return "\n".join([" " * cols + i for i in s.splitlines()])
 
+def print_test_result(result):
+    if result.success:
+        print("Success:")
+        print(indent(result.test_case.fname))
+        print("Expression:")
+        print(indent(result.test_case.expression))
+        print("Result:")
+        print(indent(serialize_obj(result.actual)))
+    else:
+        print("Failed:")
+        print(indent(result.test_case.fname))
+        print("When running:")
+        print(indent(result.test_case.expression))
+        print("Expected:")
+        print(indent(serialize_obj(result.expected)))
+        print("But got:")
+        print(indent(serialize_obj(result.actual)))
+
 if __name__ == '__main__':
-    cases = get_test_cases()
-    cases.sort(key=lambda i: len(i.expression))
 
-    with concurrent.futures.ProcessPoolExecutor() as executor:
-        futures = [executor.submit(run_test_case, case) for case in cases]
-        for f in futures:
-           result = f.result()
-           if not result.success:
-               print()
-               print("Failed:")
-               print(indent(result.test_case.fname))
-               print("When running:")
-               print(indent(result.test_case.expression))
-               print("Expected:")
-               print(indent(serialize_obj(result.expected)))
-               print("But got:")
-               print(indent(serialize_obj(result.actual)))
-               executor.shutdown(cancel_futures=True)
-               break
-           print(".", end="")
-           sys.stdout.flush()
-        else:
-           print()
-           print("Golden tests successful.")
+    if len(sys.argv) == 1:
+        cases = get_test_cases()
 
+        # We test starting from the smallest test case to get simpler errors.
+        cases.sort(key=lambda i: len(i.expression))
+
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            futures = [executor.submit(run_test_case, case) for case in cases]
+            while futures:
+                result = futures.pop(0).result()
+                if result.success:
+                    print(".", end="")
+                    sys.stdout.flush()
+                else:
+                    print("X", end="")
+
+                    # cancel the remaining futures, noting their result if possible.
+                    while futures:
+                        f = futures.pop()
+                        if f.cancel():
+                           print("?", end="")
+                        else:
+                           print("." if f.result().success else "x", end="")
+                        sys.stdout.flush()
+
+                    # print the first failed test case
+                    print()
+                    print_test_result(result)
+                    exit(1)
+            else:
+                print()
+                print(f"{len(cases)} tests successful.")
+                exit(0)
+
+    elif len(sys.argv) == 2:
+        path = sys.argv[1]
+        case = read_test_case(path)
+        result = run_test_case(case)
+        print_test_result(result)
+    else:
+        print(f"Usage: {sys.argv[1]} [test name].", file=sys.stderr)
