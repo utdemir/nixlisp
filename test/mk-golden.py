@@ -40,7 +40,7 @@ with tempfile.TemporaryDirectory(suffix="nixlisp-golden") as tmpdir:
           fpath = os.path.join(golden.TESTS_DIR, fname)
           if not os.path.exists(fpath): break
         shutil.move(tmppath, fpath)
-        print(f"Wrote: {fpath}", file=sys.stderr)
+        print(f"Wrote: {fname}", file=sys.stderr)
         exit(0)
       if r in ["e", "edit"]:
         break

@@ -1,0 +1,6 @@
+(define f (lambda (x y) (add x y)))
+(apply f '(1 2))
+
+===
+
+3

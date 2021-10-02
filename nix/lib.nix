@@ -1,4 +1,17 @@
 rec {
+  exprType = expr:
+    if builtins.isList expr then "vector"
+    else if builtins.isInt expr then "number"
+    else if builtins.isNull expr then "null"
+    else if builtins.isString expr then "string"
+    else if builtins.isFunction expr then "nix_function"
+    else if builtins.isBool expr then "bool"
+    else if builtins.isAttrs expr then
+      if builtins.hasAttr "__nixlisp_term" expr
+      then expr.type
+      else "attrset"
+    else throw "unexpected type: ${builtins.typeOf expr}";
+
   mkTerm = ty: val:
     { __nixlisp_term=true; type=ty; value=val; };
 

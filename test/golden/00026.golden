@@ -1,0 +1,9 @@
+(define i 3)
+(cond
+  ((eq? i 2) "two")
+  ((eq? i 3) "three")
+  ((eq? i 4) "four"))
+
+===
+
+"three"

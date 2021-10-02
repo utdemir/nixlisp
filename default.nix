@@ -4,7 +4,8 @@ let
 
   lib = import ./nix/lib.nix;
   parser = import ./nix/parser.nix { inherit lib nix-parsec; };
-  evaluator = import ./nix/evaluator.nix { inherit lib parser; };
+  printer = import ./nix/printer.nix { inherit lib; };
+  evaluator = import ./nix/evaluator.nix { inherit lib parser printer; };
 in
 
 {

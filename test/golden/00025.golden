@@ -1,0 +1,6 @@
+(define-macro twelve (lambda _ 12))
+(twelve)
+
+===
+
+12
