@@ -9,6 +9,6 @@ let
 in
 
 {
-  inherit parser evaluator;
+  inherit parser evaluator printer;
   eval = env: prg: evaluator.eval env (parser.parse prg);
 }
