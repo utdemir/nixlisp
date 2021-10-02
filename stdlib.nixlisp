@@ -1,5 +1,5 @@
-(define null __prim_null)
-(define null? (lambda (i) (__prim_equals i null)))
+(define nil __prim_null)
+(define nil? (lambda (i) (__prim_equals i nil)))
 
 (define car (lambda (i) (__prim_car i)))
 (define cdr (lambda (i) (__prim_cdr i)))
@@ -30,7 +30,7 @@
     (begin
       (define go
         (lambda (acc xs)
-          (if (null? xs)
+          (if (nil? xs)
             acc
             (go (__prim_get_attr (car xs) acc) (cdr xs))
           )
@@ -42,7 +42,7 @@
 )
 
 (define fold-left (lambda (f init seq)
-   (if (null? seq)
+   (if (nil? seq)
        init
        (fold-left f
                   (f init (car seq))
@@ -52,11 +52,11 @@
   (begin
     (define go (lambda (xs)
       (if
-        (null? xs)
-        null
+        (nil? xs)
+        nil
         (begin
           (define clause (car xs))
           (define condition (car clause))
           (define value (car (cdr clause)))
-          (cons 'if (cons condition (cons value (cons (go (cdr xs)) null))))))))
+          (cons 'if (cons condition (cons value (cons (go (cdr xs)) nil))))))))
     (go args))))

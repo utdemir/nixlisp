@@ -69,7 +69,7 @@ apply = env: funish: args:
 
 evaluate = env: expr:
   if lib.exprType expr == "number" then { inherit env; result = expr; }
-  else if lib.exprType expr == "null" then { inherit env; result = null; }
+  else if lib.exprType expr == "nil" then { inherit env; result = null; }
   else if lib.exprType expr == "symbol" then { inherit env; result = env."${expr.value}"; }
   else if lib.exprType expr == "string" then { inherit env; result = expr; }
   else if lib.exprType expr == "vector" then { inherit env; result = expr; }
@@ -129,7 +129,7 @@ evaluate = env: expr:
       else
         let fun = (evaluate env expr.value.car).result;
         in  if lib.exprType fun == "nix_function" || lib.exprType fun == "lambda" then
-               apply env fun (evaluateList env cdr)
+              apply env fun (evaluateList env cdr)
             else if lib.exprType fun == "macro" then
               let expansion = (apply env fun.value cdr).result;
               in  builtins.trace (printer.print expansion) (evaluate env expansion)
