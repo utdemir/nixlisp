@@ -7,11 +7,11 @@
 (define cons (lambda (ca cd) (__prim_cons ca cd)))
 (define cons? (lambda (x) (__prim_equals (__prim_expr_type x) "cons")))
 
-(define-macro defun (lambda (name args body) (
-  cons 'define (cons name (cons (cons 'lambda (cons args (cons body nil))) nil)))))
+(define-macro defun (lambda (name args body)
+  (cons 'define (cons name (cons (cons 'lambda (cons args (cons body nil))) nil)))))
 
-(define-macro defmacro (lambda (name args body) (
-  cons 'define-macro (cons name (cons (cons 'lambda (cons args (cons body nil))) nil)))))
+(define-macro defmacro (lambda (name args body)
+  (cons 'define-macro (cons name (cons (cons 'lambda (cons args (cons body nil))) nil)))))
 
 (defmacro cond args
   (begin
