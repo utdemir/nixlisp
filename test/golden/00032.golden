@@ -1,0 +1,6 @@
+(define-macro dofoo (lambda (i) (cons 'foo (cons i nil))))
+(macroexpand dofoo 12)
+
+===
+
+'(foo 12)

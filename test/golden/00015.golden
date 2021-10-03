@@ -1,5 +1,5 @@
 (define f (lambda (x y) (add x y)))
-(apply f '(1 2))
+(apply f (1 2))
 
 ===
 

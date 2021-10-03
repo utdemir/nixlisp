@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+cd "$( dirname $0 )"/..
+
+nix-instantiate \
+  --eval --strict --json --show-trace \
+  -E "{ input }: (import ./.).eval {} input" \
+  --argstr input "$1"

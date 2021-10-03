@@ -1,62 +1,60 @@
 (define nil __prim_null)
-(define nil? (lambda (i) (__prim_equals i nil)))
+(define nil? (lambda (x) (__prim_equals x nil)))
 
 (define car (lambda (i) (__prim_car i)))
 (define cdr (lambda (i) (__prim_cdr i)))
 
 (define cons (lambda (ca cd) (__prim_cons ca cd)))
+(define cons? (lambda (x) (__prim_equals (__prim_expr_type x) "cons")))
 
-(define true __prim_true)
-(define false __prim_false)
-
-(define add (lambda xs (fold-left __prim_plus 0 xs)))
-(define mul (lambda xs (fold-left __prim_product 1 xs)))
-(define eq? (lambda (x y) (__prim_equals x y)))
-
-(define and (lambda xs (fold-left __prim_and true xs)))
-(define or (lambda xs (fold-left __prim_or false xs)))
-(define not (lambda (x) (if x false true)))
-
-(define symbol-name (lambda (x) (__prim_symbol_name x)))
-
-(define apply (lambda (f xs) (eval (cons f xs))))
-
-(define cons? (lambda (x) (eq? (__prim_expr_type x) "cons")))
-(define int? (lambda (x) (eq? (__prim_expr_type x) "int")))
-(define attrset? (lambda (x) (eq? (__prim_expr_type x) "attrset")))
-
-(define attr
-  (lambda (attrset . path)
-    (begin
-      (define go
-        (lambda (acc xs)
-          (if (nil? xs)
-            acc
-            (go (__prim_get_attr (car xs) acc) (cdr xs))
-          )
-        )
-      )
-      (go attrset path)
-    )
-  )
-)
-
-(define fold-left (lambda (f init seq)
-   (if (nil? seq)
-       init
-       (fold-left f
-                  (f init (car seq))
-                  (cdr seq)))))
+(define-macro defun (lambda (name args body) (
+  cons 'define (cons name (cons (cons 'lambda (cons args (cons body nil))) nil)))))
 
 (define-macro cond (lambda args
   (begin
     (define go (lambda (xs)
       (if
-        (nil? xs)
-        nil
+        (nil? xs) 'nil
         (begin
           (define clause (car xs))
           (define condition (car clause))
           (define value (car (cdr clause)))
           (cons 'if (cons condition (cons value (cons (go (cdr xs)) nil))))))))
     (go args))))
+
+(define true __prim_true)
+(define false __prim_false)
+
+(defun add xs (fold-left __prim_plus 0 xs))
+(defun subtract (x . xs) (fold-left __prim_minus x xs))
+(defun mul xs (fold-left __prim_product 1 xs))
+
+(defun eq? (x . xs)
+  (begin
+    (defun go (rem)
+      (cond
+        ((nil? rem)                  true)
+        ((__prim_equals (car rem) x) (go (cdr rem)))
+        (true                        false)))
+    (go xs)))
+
+;; TODO: these should short-circuit
+(defun and xs (fold-left __prim_and true xs))
+(defun or xs (fold-left __prim_or false xs))
+
+(defun not (x) (if x false true))
+
+(defun symbol-name (x) (__prim_symbol_name x))
+
+(define-macro macroexpand (lambda (macro . args)
+  (cons 'apply (cons (cons '__prim_macro_to_lambda (cons macro nil)) (cons args nil)))))
+
+(defun int?     (x) (eq? (__prim_expr_type x) "int"))
+(defun attrset? (x) (eq? (__prim_expr_type x) "attrset"))
+
+(defun fold-left (f init seq)
+   (if (nil? seq)
+       init
+       (fold-left f
+                  (f init (car seq))
+                  (cdr seq))))

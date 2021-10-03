@@ -1,0 +1,12 @@
+(define f "err")
+
+(define-macro m (lambda () (begin
+  (define f (lambda (i) (if (__prim_equals i 0) 5 (f (subtract i 1)))))
+  (cons 'add (cons (f 20) (cons 1 nil)))
+)))
+
+(macroexpand m)
+
+===
+
+'(add  5 1)

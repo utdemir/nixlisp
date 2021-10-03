@@ -13,10 +13,11 @@ print = expr:
       else if ty == "bool" then if expr then "true" else "false"
       else if ty == "string" then "\"${expr}\"" # FIXME: escaping
       else if ty == "nil" then "nil"
-      else if ty == "lambda" then "lambda (${printLambdaArgs expr.value.args}) <code>" # FIXME: Print the code too
-      else if ty == "macro" then "macro (${print expr.value})"
+      else if ty == "lambda" then "<lambda>"
+      else if ty == "macro" then "<macro>"
+      else if ty == "nix_function" then "<nix_function>"
       else if ty == "attrset" then "{ ${ builtins.toJSON (builtins.attrNames expr) } }"
-      else if ty == "cons" then "(cons ${print expr.value.car} ${print expr.value.cdr} )"
+      else if ty == "cons" then "(cons ${print expr.value.car} ${print expr.value.cdr})"
       else throw "[print] Unknown type: ${ty}"; # TODO: Add the rest
 
 in

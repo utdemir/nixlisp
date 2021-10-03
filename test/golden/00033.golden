@@ -1,0 +1,8 @@
+(macroexpand
+  cond
+  (f 1)
+  (g 2))
+
+===
+
+'(if f 1 (if g 2 nil))

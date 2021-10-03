@@ -7,6 +7,11 @@ assertSymbol = expr:
   then expr.value
   else throw "expected a symbol, but got a ${lib.exprType expr}";
 
+assertMacro = expr:
+  if lib.exprType expr == "macro"
+  then expr.value
+  else throw "expected a macro, but got a ${lib.exprType expr}";
+
 assertCons = expr:
   if lib.exprType expr == "cons"
   then expr.value
@@ -23,7 +28,7 @@ matchList = keys: expr:
   if builtins.length keys == 0
   then if expr == null
        then {}
-       else throw "list too long"
+       else throw "list too long, remaining: ${printer.print expr}"
   else let c = assertCons expr;
        in  { "${builtins.elemAt keys 0}" = c.car; } // matchList (lib.drop 1 keys) c.cdr;
 
@@ -45,14 +50,14 @@ apply = env: funish: args:
               in go (f c.car) c.cdr;
        in { inherit env; result = go funish args; }
   else if lib.exprType funish == "lambda" then
-     # when we have a lambda, we create a new env; assigning (evaluated) arguments to the bindings.
+     # when we have a lambda, we create a new env; assigning arguments to the bindings.
      # if the last binding is null (for a list), every argument is assigned to a binding.
      # if the last binding is not null (dotted pair), rest of the arguments is assigned to last binding (varargs).
      let go = env: bindings: args:
            if bindings == null then
              if args == null
              then env
-             else throw "too many arguments"
+             else throw "too many arguments: ${printer.print args}"
            else if lib.exprType bindings == "cons" then
              let b = assertCons bindings;
                  c = assertCons args;
@@ -63,7 +68,8 @@ apply = env: funish: args:
              let binding = assertSymbol bindings;
              in env // { "${binding}" = args; };
          innerEnv = go (env // funish.value.env) funish.value.args args;
-     in { inherit env; result = (evaluate innerEnv funish.value.body).result; }
+     in # builtins.trace "Called ${printer.print funish} with ${printer.print args}"
+           { inherit env; result = (evaluate innerEnv funish.value.body).result; }
    else
      throw "apply was expecting a function-ish, but got a ${printer.print funish}";
 
@@ -74,6 +80,7 @@ evaluate = env: expr:
   else if lib.exprType expr == "string" then { inherit env; result = expr; }
   else if lib.exprType expr == "vector" then { inherit env; result = expr; }
   else if lib.exprType expr == "lambda" then { inherit env; result = expr; }
+  else if lib.exprType expr == "bool" then { inherit env; result = expr; }
   else if lib.exprType expr == "nix_function" then { inherit env; result = expr; }
   else if lib.exprType expr == "macro" then { inherit env; result = expr; }
   else if lib.exprType expr == "cons" then
@@ -85,7 +92,7 @@ evaluate = env: expr:
         # 'define' evaluates the second arguments and assigns it to the first symbol
         let c  = matchList ["name" "value"] cdr;
             name = assertSymbol c.name;
-            value = (evaluate env c.value).result;
+            value = (evaluate (env // { ${name} = value; }) c.value).result;
         in  { env = env // { ${name} = value; }; result = null; }
       else if car == lib.mkSymbol "quote" then
         # 'quote ' returns the only argument without evaluating
@@ -95,6 +102,11 @@ evaluate = env: expr:
         # 'eval' evaluates its only argument, dual of quote
         let c = matchList ["arg"] cdr;
         in  evaluate env (evaluate env c.arg).result
+      else if car == lib.mkSymbol "apply" then
+        # 'apply' applies the function to unevaluated parameters
+        let c = matchList ["fun" "params"] cdr;
+            fun = (evaluate env c.fun).result;
+        in  apply env fun c.params
       else if car == lib.mkSymbol "define-macro" then
         # 'define-macro' creates a 'macro' object carrying the lambda.
         let c = matchList ["name" "lambda"] cdr;
@@ -129,10 +141,11 @@ evaluate = env: expr:
       else
         let fun = (evaluate env expr.value.car).result;
         in  if lib.exprType fun == "nix_function" || lib.exprType fun == "lambda" then
-              apply env fun (evaluateList env cdr)
+              let result = (apply env fun (evaluateList env cdr)).result;
+              in  { inherit env result; }
             else if lib.exprType fun == "macro" then
               let expansion = (apply env fun.value cdr).result;
-              in  builtins.trace (printer.print expansion) (evaluate env expansion)
+              in  evaluate env (builtins.trace (printer.print expansion) expansion)
             else if lib.exprType fun == "attrset" then
               # attrset's should behave like functions, they take a string or a symbol and do a lookup.
               throw "TODO"
@@ -142,7 +155,7 @@ evaluate = env: expr:
 
 evaluateProgram = env: program:
   if builtins.isList program
-  then lib.foldl (acc: x: evaluate acc.env x) { inherit env; value = null; } (program)
+  then lib.foldl (acc: x: evaluate acc.env x) { inherit env; result = null; } (program)
   else throw "invariant violation: program is not a list";
 
 nixify = x:
@@ -165,6 +178,8 @@ prims = {
   __prim_expr_type = x: lib.exprType x;
   __prim_cons = ca: cd: lib.mkCons ca cd;
 
+  __prim_macro_to_lambda = macro: assertMacro macro;
+
   # operators
   __prim_plus = i: j: i + j;
   __prim_product = i: j: i * j;
@@ -178,7 +193,7 @@ prims = {
   __prim_cdr = xs: (assertCons xs).cdr;
 
   # builtins
-  __prim_builtins = builtins;
+  __builtins = builtins;
   __prim_get_attr = builtins.getAttr; # we need this directly to access the builtins
 
   # conversion

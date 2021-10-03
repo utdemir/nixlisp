@@ -1,0 +1,8 @@
+;; This is actually not a very small test case, since it also tests
+;; the cond macro. So this comment is just to make it look longer.
+
+(eq? 1 1 1)
+
+===
+
+true

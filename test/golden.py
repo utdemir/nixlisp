@@ -17,9 +17,10 @@ def read_test_case(fp):
    with open(fp, "r") as f:
        contents = f.read()
 
-   [expr, expected] = contents.rsplit("\n=", maxsplit=-1)
-   expr = expr.strip("= \n")
-   expected = expected.strip("= \n")
+   spl = contents.rsplit("\n=", maxsplit=-1)
+
+   expr = spl[0].strip("= \n")
+   expected = spl[1].strip("= \n") if len(spl) > 1 else ""
 
    return TestCase(fname=os.path.basename(fp), expression=expr, expected_expression=expected)
 

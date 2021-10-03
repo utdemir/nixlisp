@@ -80,7 +80,7 @@ in  rec {
     let result = parsec.runParser parser s;
     in  if result.type == "success"
         then result.value
-        else throw "parse failed; ${result.value}";
+        else throw "parse failed: ${builtins.toJSON result.value}";
 
   parseFile = f: parseString (builtins.readFile f);
 
