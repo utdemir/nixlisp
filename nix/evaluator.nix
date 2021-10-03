@@ -145,7 +145,7 @@ evaluate = env: expr:
               in  { inherit env result; }
             else if lib.exprType fun == "macro" then
               let expansion = (apply env fun.value cdr).result;
-              in  evaluate env (builtins.trace (printer.print expansion) expansion)
+              in  evaluate env expansion
             else if lib.exprType fun == "attrset" then
               # attrset's should behave like functions, they take a string or a symbol and do a lookup.
               throw "TODO"
