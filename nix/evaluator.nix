@@ -17,6 +17,11 @@ assertCons = expr:
   then expr.value
   else throw "expected a cons, but got a ${lib.exprType expr}";
 
+assertAttrset = expr:
+  if lib.exprType expr == "attrset"
+  then expr
+  else throw "expected an attrset, but got a ${lib.exprType expr}";
+
 assertSymbols = expr:
   if expr == null
   then []
@@ -128,7 +133,7 @@ evaluate = env: expr:
               then prev
               else let c = assertCons xs;
                        curr = evaluate prev.env c.car;
-                   in  go curr c.cdr;
+                   in  builtins.seq curr.result (go curr c.cdr);
             result = (go { inherit env; result = null; } cdr).result;
         in { inherit env result; }
       else if car == lib.mkSymbol "lambda" then
@@ -148,7 +153,8 @@ evaluate = env: expr:
               in  evaluate env expansion
             else if lib.exprType fun == "attrset" then
               # attrset's should behave like functions, they take a string or a symbol and do a lookup.
-              throw "TODO"
+              # this is implemented in stdlib, so we simply wrap that in an "attr" call.
+              evaluate env (lib.mkCons (lib.mkSymbol "attr") expr)
             else
               throw "Expecting a function call, but got ${printer.print fun}."
   else throw "Unexpected expression: ${printer.print expr}.";
@@ -171,8 +177,10 @@ prims = {
   __prim_null = null;
   __prim_true = true;
   __prim_false = false;
-  __prim_vector_empty = [];
   __prim_attrset_empty = {};
+  __prim_vector_empty = [];
+  __prim_vector_singleton = x: [ x ];
+  __prim_name_value_pair = name: value: { inherit name value; };
 
   __prim_symbol_name = x: assertSymbol x;
   __prim_expr_type = x: lib.exprType x;
@@ -187,6 +195,8 @@ prims = {
   __prim_equals = i: j: i == j;
   __prim_and = i: j: i && j;
   __prim_or = i: j: i || j;
+  __prim_append = i: j: i ++ j;
+  __prim_merge = i: j: assertAttrset i // assertAttrset j;
 
   # accessors
   __prim_car = xs: (assertCons xs).car;

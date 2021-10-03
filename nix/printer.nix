@@ -18,6 +18,7 @@ print = expr:
       else if ty == "nix_function" then "<nix_function>"
       else if ty == "attrset" then "{ ${ builtins.toJSON (builtins.attrNames expr) } }"
       else if ty == "cons" then "(cons ${print expr.value.car} ${print expr.value.cdr})"
+      else if ty == "vector" then "[" + builtins.concatStringsSep " " (builtins.map print expr) + "]"
       else throw "[print] Unknown type: ${ty}"; # TODO: Add the rest
 
 in

@@ -3,4 +3,8 @@
     'foo 12
     'bar "baz"))
 
-(s 'foo)
+(cons (s 'foo) (s 'bar))
+
+===
+
+(cons 12 "baz")

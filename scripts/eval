@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 
+if [[ -f "$1" ]]; then
+  inp=(--arg input "$(realpath $1)")
+else
+  inp=(--argstr input "$1")
+fi
+
 cd "$( dirname $0 )"/..
 
 nix-instantiate \
   --eval --strict --json --show-trace \
   -E "{ input }: (import ./.).eval {} input" \
-  --argstr input "$1"
+  "${inp[@]}"
