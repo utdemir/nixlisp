@@ -10,7 +10,10 @@
 (define-macro defun (lambda (name args body) (
   cons 'define (cons name (cons (cons 'lambda (cons args (cons body nil))) nil)))))
 
-(define-macro cond (lambda args
+(define-macro defmacro (lambda (name args body) (
+  cons 'define-macro (cons name (cons (cons 'lambda (cons args (cons body nil))) nil)))))
+
+(defmacro cond args
   (begin
     (define go (lambda (xs)
       (if
@@ -20,7 +23,7 @@
           (define condition (car clause))
           (define value (car (cdr clause)))
           (cons 'if (cons condition (cons value (cons (go (cdr xs)) nil))))))))
-    (go args))))
+    (go args)))
 
 (define true __prim_true)
 (define false __prim_false)
@@ -46,8 +49,8 @@
 
 (defun symbol-name (x) (__prim_symbol_name x))
 
-(define-macro macroexpand (lambda (macro . args)
-  (cons 'apply (cons (cons '__prim_macro_to_lambda (cons macro nil)) (cons args nil)))))
+(defmacro macroexpand (macro . args)
+  (cons 'apply (cons (cons '__prim_macro_to_lambda (cons macro nil)) (cons args nil))))
 
 (defun int?     (x) (eq? (__prim_expr_type x) "int"))
 (defun attrset? (x) (eq? (__prim_expr_type x) "attrset"))
