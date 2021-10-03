@@ -5,14 +5,19 @@
 (define car (lambda (i) (__prim_car i)))
 (define cdr (lambda (i) (__prim_cdr i)))
 
+(define list (lambda xs xs))
+
 (define cons (lambda (ca cd) (__prim_cons ca cd)))
 (define cons? (lambda (x) (__prim_equals (__prim_expr_type x) "cons")))
 
+;; (define-macro defun (lambda (name args body)
+;;   (cons 'define (cons name (cons (cons 'lambda (cons args (cons body nil))) nil)))))
+
 (define-macro defun (lambda (name args body)
-  (cons 'define (cons name (cons (cons 'lambda (cons args (cons body nil))) nil)))))
+  (list 'define name (list 'lambda args body))))
 
 (define-macro defmacro (lambda (name args body)
-  (cons 'define-macro (cons name (cons (cons 'lambda (cons args (cons body nil))) nil)))))
+  (list 'define-macro name (list 'lambda args body))))
 
 (defmacro cond args
   (begin
@@ -23,7 +28,7 @@
           (define clause (car xs))
           (define condition (car clause))
           (define value (car (cdr clause)))
-          (cons 'if (cons condition (cons value (cons (go (cdr xs)) nil))))))))
+          (list 'if condition value (go (cdr xs)))))))
     (go args)))
 
 ;; booleans
@@ -65,7 +70,7 @@
 
 ;; utilities
 (defmacro macroexpand (macro . args)
-  (cons 'apply (cons (cons '__prim_macro_to_lambda (cons macro nil)) (cons args nil))))
+  (list 'apply (list '__prim_macro_to_lambda macro) args))
 
 (defun builtin (name)
   (__prim_get_attr name __builtins))
