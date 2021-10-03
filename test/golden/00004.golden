@@ -1,4 +1,4 @@
-(define double (lambda (x) (mul x 2)))
+(define double (lambda (x) (* x 2)))
 (double 21)
 
 ===

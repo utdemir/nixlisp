@@ -13,13 +13,18 @@ space =
     parsec.fail; # we don't have block comments
 
 symbol =
-  parsec.fmap
-    (xs: { __nixlisp_term = true; type = "symbol"; value = builtins.concatStringsSep "" xs; })
-    (lexeme (parsec.many1 (parsec.satisfy (i:
-      (i >= "a" && i <= "z")
-        || (i >= "A" && i <= "Z")
-        || i == "_" || i == "-" || i == "?"
-    ))));
+  let validInitial = i:
+        (i >= "a" && i <= "z")
+          || (i >= "A" && i <= "Z")
+          || builtins.elem i [ "!" "$" "%" "&" "*" "+" "-" "." "/" ":" "<" "=" ">" "?" "@" "^" "_" "~" ];
+      validRest = i: validInitial i || (i >= "0" && i <= "9");
+      p = parsec.fmap
+            (arg: lib.mkSymbol (builtins.concatStringsSep "" arg))
+            (parsec.sequence
+              [ (parsec.satisfy validInitial)
+                (parsec.takeWhile (validRest))
+              ]);
+   in lexeme p;
 
 lexeme = lexer.lexeme space;
 string = lexer.symbol space;

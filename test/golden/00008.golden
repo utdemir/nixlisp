@@ -1,7 +1,7 @@
 (define x 1)
 (define f (lambda (i) (begin
   (define x 5)
-  (add i x)
+  (+ i x)
 )))
 (cons x (f x))
 

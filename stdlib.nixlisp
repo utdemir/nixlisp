@@ -25,9 +25,9 @@
 (define true __prim_true)
 (define false __prim_false)
 
-(defun add xs (fold-left __prim_plus 0 xs))
-(defun subtract (x . xs) (fold-left __prim_minus x xs))
-(defun mul xs (fold-left __prim_product 1 xs))
+(defun + xs (fold-left __prim_plus 0 xs))
+(defun - (x . xs) (fold-left __prim_minus x xs))
+(defun * xs (fold-left __prim_product 1 xs))
 
 (defun eq? (x . xs)
   (begin

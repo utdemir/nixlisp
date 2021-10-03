@@ -1,4 +1,4 @@
-(fold-left add 0 (quote (1 2 3 4 5)))
+(fold-left + 0 (quote (1 2 3 4 5)))
 
 ===
 
