@@ -1,5 +1,5 @@
 let
-  sources = import ./nix/sources.nix;
+  sources = import ./deps/sources.nix;
   nix-parsec = import sources.nix-parsec;
 
   lib = import ./nix/lib.nix;
