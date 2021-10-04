@@ -1,4 +1,4 @@
-(symbol-name 'foo)
+(symbol->string 'foo)
 
 ===
 

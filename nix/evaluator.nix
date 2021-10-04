@@ -119,7 +119,7 @@ evaluate = env: expr:
             lambda = (evaluate env c.lambda).result; # TODO: error out when this is not actually a lambda
             value = lib.mkTerm "macro" lambda;
         in { env = env // { ${name} = value; }; result = null; }
-      else if car == lib.mkSymbol "if" then
+      else if car == lib.mkSymbol "__prim_if" then
         # if evaluates the first argument, if null or false, evaluates & returns the third; else the second
         let c = matchList ["cond" "if_t" "if_f"] cdr;
             cond = (evaluate env c.cond).result;
@@ -177,7 +177,6 @@ prims = {
   __prim_null = null;
   __prim_true = true;
   __prim_false = false;
-  __prim_attrset_empty = {};
   __prim_vector_empty = [];
   __prim_vector_singleton = x: [ x ];
   __prim_name_value_pair = name: value: { inherit name value; };

@@ -1,4 +1,4 @@
-;; bootstrap cond, defun and defmacro
+;; bootstrap common macros (defun, defmacro, if, cond)
 (define nil __prim_null)
 (define nil? (lambda (x) (__prim_equals x nil)))
 
@@ -10,67 +10,33 @@
 (define cons (lambda (ca cd) (__prim_cons ca cd)))
 (define cons? (lambda (x) (__prim_equals (__prim_expr_type x) "cons")))
 
-;; (define-macro defun (lambda (name args body)
-;;   (cons 'define (cons name (cons (cons 'lambda (cons args (cons body nil))) nil)))))
+(define-macro defun (lambda (name args . body)
+  (list 'define name (list 'lambda args (cons 'begin body)))))
 
-(define-macro defun (lambda (name args body)
-  (list 'define name (list 'lambda args body))))
+(define-macro defmacro (lambda (name args . body)
+  (list 'define-macro name (list 'lambda args (cons 'begin body)))))
 
-(define-macro defmacro (lambda (name args body)
-  (list 'define-macro name (list 'lambda args body))))
+(defmacro if xs
+  (define cond (car xs))
+  (define if-t (car (cdr xs)))
+  (define if-f (begin
+    (define h (cdr (cdr xs)))
+    (__prim_if (nil? h) nil
+               (car h))))
+  (list '__prim_if cond if-t if-f))
 
 (defmacro cond args
-  (begin
-    (define go (lambda (xs)
-      (if
-        (nil? xs) 'nil
-        (begin
-          (define clause (car xs))
-          (define condition (car clause))
-          (define value (car (cdr clause)))
-          (list 'if condition value (go (cdr xs)))))))
-    (go args)))
-
-;; booleans
-(define true __prim_true)
-(define false __prim_false)
-
-(defun eq? (x . xs)
-  (begin
-    (defun go (rem)
-      (cond
-        ((nil? rem)                  true)
-        ((__prim_equals (car rem) x) (go (cdr rem)))
-        (true                        false)))
-    (go xs)))
-
-;; TODO: these should short-circuit
-(defun and xs (fold-left __prim_and true xs))
-(defun or xs (fold-left __prim_or false xs))
-
-(defun not (x) (if x false true))
-
-;; numbers
-(defun int?     (x) (eq? (__prim_expr_type x) "int"))
-
-(defun + xs (fold-left __prim_plus 0 xs))
-(defun - (x . xs) (fold-left __prim_minus x xs))
-(defun * xs (fold-left __prim_product 1 xs))
-
-;; symbols
-(defun symbol? (x) (__prim_equals (__prim_expr_type x) "symbol"))
-(defun symbol-name (x) (__prim_symbol_name x))
-
-;; strings
-(defun string? (x) (__prim_equals (__prim_expr_type x) "string"))
-(defun stringish (x)
-  (cond ((string? x) x)
-        ((symbol? x) (symbol-name x))
-        (true (throw "stringish: expecting a symbol or a string"))))
+  (defun go (xs)
+    (if
+      (nil? xs) 'nil
+      (begin
+        (define clause (car xs))
+        (define condition (car clause))
+        (define value (car (cdr clause)))
+        (list 'if condition value (go (cdr xs))))))
+  (go args))
 
 ;; utilities
-(defmacro macroexpand (macro . args)
-  (list 'apply (list '__prim_macro_to_lambda macro) args))
 
 (defun builtin (name)
   (__prim_get_attr name __builtins))
@@ -82,6 +48,9 @@
 (defun throw (msg)
   ((builtin "throw") msg))
 
+(defun assert (cond msg)
+  (if cond nil (throw msg)))
+
 (defun fold-left (f init seq)
    (if (nil? seq)
        init
@@ -89,30 +58,86 @@
                   (f init (car seq))
                   (cdr seq))))
 
+;; booleans
+
+(define true __prim_true)
+(define false __prim_false)
+
+(defun eq? (x . xs)
+  (defun go (rem)
+    (cond
+      ((nil? rem)                  true)
+      ((__prim_equals (car rem) x) (go (cdr rem)))
+      (true                        false)))
+  (go xs))
+
+(defun and xs (fold-left __prim_and true xs))
+(defun or xs (fold-left __prim_or false xs))
+
+(defun not (x) (if x false true))
+
+;; numbers
+
+(defun int?     (x) (eq? (__prim_expr_type x) "int"))
+
+(defun + xs (fold-left __prim_plus 0 xs))
+(defun - (x . xs) (fold-left __prim_minus x xs))
+(defun * xs (fold-left __prim_product 1 xs))
+
+;; symbols
+
+(defun symbol? (x) (__prim_equals (__prim_expr_type x) "symbol"))
+(defun symbol->string (x) (__prim_symbol_name x))
+
+;; strings
+
+(defun string? (x) (__prim_equals (__prim_expr_type x) "string"))
+(defun stringish (x)
+  (cond ((string? x) x)
+        ((symbol? x) (symbol->string x))
+        (true (throw "stringish: expecting a symbol or a string"))))
+
+;; utilities
+
+(defmacro macroexpand (macro . args)
+  (list 'apply (list '__prim_macro_to_lambda macro) args))
+
 ;; vectors
-(defun list-to-vector (xs)
-  (cond ((cons? xs) (__prim_append (__prim_vector_singleton (car xs)) (list-to-vector (cdr xs))))
+
+(defun vector? (x) (eq? (__prim_expr_type x) "vector"))
+
+(defun list->vector (xs)
+  ; FIXME This should be implemented in a faster way
+  (cond ((cons? xs) (__prim_append (__prim_vector_singleton (car xs)) (list->vector (cdr xs))))
         ((nil? xs) __prim_vector_empty)
-        (true (throw "foobar"))))
+        (true (throw "list->vector: expecting a list"))))
+
+(defun vector->list (xs)
+  (assert (vector? xs) "vector->list: expected a vector")
+  (defun ix (i) ((builtin "elemAt") xs i))
+  (define len ((builtin "length") xs))
+  (defun go (i)
+    (if (eq? i len) nil
+        (cons (ix i) (go (+ i 1)))))
+  (go 0))
 
 ;; attrsets
+
 (defun attrset? (x) (eq? (__prim_expr_type x) "attrset"))
 (defun attrset xs
-  (begin
-    (defun pairs (ys)
-      (begin
-        (cond ((nil? ys) nil)
-              ((cons? ys) (begin
-                             (define name (car ys))
-                             (define value (car (cdr ys)))
-                             (cons (__prim_name_value_pair (stringish name) value) (pairs (cdr (cdr ys))))))
-              (true (throw "barbaz")))))
-    ((builtin "listToAttrs") (list-to-vector (pairs xs)))))
+  (defun pairs (ys)
+    (cond ((nil? ys) nil)
+          ((cons? ys) (begin
+                         (define name (car ys))
+                         (define value (car (cdr ys)))
+                         (cons (__prim_name_value_pair (stringish name) value) (pairs (cdr (cdr ys))))))
+          (true (throw "attrset: expensing a cons pair"))))
+  ((builtin "listToAttrs") (list->vector (pairs xs))))
 
 (defun attr (attrset . path)
-  (begin
-    (defun go (acc xs)
-      (cond ((nil? xs) acc)
-            ((cons? xs) (go (__prim_get_attr (stringish (car xs)) acc) (cdr xs)))
-            (true (throw "attr: expecting a cons list"))))
-    (go attrset path)))
+  (defun go (acc xs)
+    (cond ((nil? xs) acc)
+          ((cons? xs) (go (__prim_get_attr (stringish (car xs)) acc) (cdr xs)))
+          (true (throw "attr: expecting a cons list"))))
+  (go attrset path))
+
