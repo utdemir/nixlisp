@@ -9,7 +9,7 @@ let
 space =
   lexer.space
     (parsec.many1 (parsec.satisfy (i: i == " " || i == "\n" || i == "\t"))) # whitespace
-    (lexer.skipLineComment ";;") # line comments
+    (lexer.skipLineComment ";") # line comments
     parsec.fail; # we don't have block comments
 
 symbol =
