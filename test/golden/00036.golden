@@ -1,5 +1,5 @@
 (define s
-  (attrset
+  (attrs
     'foo 12
     'bar "baz"))
 

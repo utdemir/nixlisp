@@ -9,7 +9,7 @@ rec {
     else if builtins.isAttrs expr then
       if builtins.hasAttr "__nixlisp_term" expr
       then expr.type
-      else "attrset"
+      else "attrs"
     else throw "unexpected type: ${builtins.typeOf expr}";
 
   mkTerm = ty: val:

@@ -35,7 +35,7 @@ def eval_expression(expr):
          "nix-instantiate" , "--eval", "--strict", "--json", "--show-trace", "-E",
          "{ input }: (import ./.).eval {} input",
          "--argstr", "input", expr
-       ], capture_output=True, timeout=1)
+       ], capture_output=True, timeout=20)
    except subprocess.TimeoutExpired:
       return False, "Timed out."
 

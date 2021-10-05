@@ -12,15 +12,20 @@ assertMacro = expr:
   then expr.value
   else throw "expected a macro, but got a ${lib.exprType expr}";
 
+assertLambda = expr:
+  if lib.exprType expr == "lambda"
+  then expr.value
+  else throw "expected a lambda, but got a ${lib.exprType expr}";
+
 assertCons = expr:
   if lib.exprType expr == "cons"
   then expr.value
   else throw "expected a cons, but got a ${lib.exprType expr}";
 
-assertAttrset = expr:
-  if lib.exprType expr == "attrset"
+assertAttrs = expr:
+  if lib.exprType expr == "attrs"
   then expr
-  else throw "expected an attrset, but got a ${lib.exprType expr}";
+  else throw "expected an attrs, but got a ${lib.exprType expr}";
 
 assertSymbols = expr:
   if expr == null
@@ -36,6 +41,13 @@ matchList = keys: expr:
        else throw "list too long, remaining: ${printer.print expr}"
   else let c = assertCons expr;
        in  { "${builtins.elemAt keys 0}" = c.car; } // matchList (lib.drop 1 keys) c.cdr;
+
+lambdaFunctor = self:
+  throw "TODO";
+
+mkLambda = { args, body, env }:
+  lib.mkTerm "lambda" { inherit args body env; }
+    // { __functor = lambdaFunctor; };
 
 mapList = f: xs:
   if xs == null
@@ -141,7 +153,7 @@ evaluate = env: expr:
         let c = matchList ["args" "body"] cdr;
             args = c.args;
             body = c.body;
-            result = lib.mkTerm "lambda" { inherit args body env; };
+            result = mkLambda { inherit args body env; };
         in { inherit env result; }
       else
         let fun = (evaluate env expr.value.car).result;
@@ -151,10 +163,10 @@ evaluate = env: expr:
             else if lib.exprType fun == "macro" then
               let expansion = (apply env fun.value cdr).result;
               in  evaluate env expansion
-            else if lib.exprType fun == "attrset" then
-              # attrset's should behave like functions, they take a string or a symbol and do a lookup.
-              # this is implemented in stdlib, so we simply wrap that in an "attr" call.
-              evaluate env (lib.mkCons (lib.mkSymbol "attr") expr)
+            else if lib.exprType fun == "attrs" then
+              # attr's should behave like functions, they take a string or a symbol and do a lookup.
+              # this is implemented in stdlib, so we simply wrap that in an "getattr" call.
+              evaluate env (lib.mkCons (lib.mkSymbol "getattr") expr)
             else
               throw "Expecting a function call, but got ${printer.print fun}."
   else throw "Unexpected expression: ${printer.print expr}.";
@@ -195,7 +207,7 @@ prims = {
   __prim_and = i: j: i && j;
   __prim_or = i: j: i || j;
   __prim_append = i: j: i ++ j;
-  __prim_merge = i: j: assertAttrset i // assertAttrset j;
+  __prim_merge = i: j: assertAttrs i // assertAttrs j;
 
   # accessors
   __prim_car = xs: (assertCons xs).car;
@@ -204,13 +216,6 @@ prims = {
   # builtins
   __builtins = builtins;
   __prim_get_attr = builtins.getAttr; # we need this directly to access the builtins
-
-  # conversion
-  # __prim_lambda_to_nix = x:
-  #   if lib.exprType x == "lambda"
-  #   then
-  #     let go
-  #   else throw "expecting a lambda, but got ${lib.exprType x}";
 };
 
 stdenv =

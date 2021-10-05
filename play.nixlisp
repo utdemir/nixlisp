@@ -1,6 +1,1 @@
-(define s
-  (attrset
-    'foo 12
-    'bar "baz"))
-
-(s 'foo)
+(if true nil)
