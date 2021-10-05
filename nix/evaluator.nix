@@ -42,11 +42,17 @@ matchList = keys: expr:
   else let c = assertCons expr;
        in  { "${builtins.elemAt keys 0}" = c.car; } // matchList (lib.drop 1 keys) c.cdr;
 
+extendScope = env: scope:
+  env // { scope = env.scope // scope; };
+
+addTraceback = env: entry:
+  env // { traceback = env.traceback ++ [ entry ]; };
+
 lambdaFunctor = self:
   throw "TODO";
 
-mkLambda = { args, body, env }:
-  lib.mkTerm "lambda" { inherit args body env; }
+mkLambda = { args, body, scope }:
+  lib.mkTerm "lambda" { inherit args body scope; }
     // { __functor = lambdaFunctor; };
 
 mapList = f: xs:
@@ -79,12 +85,12 @@ apply = env: funish: args:
              let b = assertCons bindings;
                  c = assertCons args;
                  name = assertSymbol b.car;
-              in go (env // { "${name}" = c.car; }) b.cdr c.cdr
+              in go (extendScope env { "${name}" = c.car; }) b.cdr c.cdr
            else
              # varargs
              let binding = assertSymbol bindings;
-             in env // { "${binding}" = args; };
-         innerEnv = go (env // funish.value.env) funish.value.args args;
+             in extendScope env { "${binding}" = args; };
+         innerEnv = go (extendScope env funish.value.scope) funish.value.args args;
      in # builtins.trace "Called ${printer.print funish} with ${printer.print args}"
            { inherit env; result = (evaluate innerEnv funish.value.body).result; }
    else
@@ -93,7 +99,7 @@ apply = env: funish: args:
 evaluate = env: expr:
   if lib.exprType expr == "number" then { inherit env; result = expr; }
   else if lib.exprType expr == "nil" then { inherit env; result = null; }
-  else if lib.exprType expr == "symbol" then { inherit env; result = env."${expr.value}"; }
+  else if lib.exprType expr == "symbol" then { inherit env; result = env.scope."${expr.value}"; }
   else if lib.exprType expr == "string" then { inherit env; result = expr; }
   else if lib.exprType expr == "vector" then { inherit env; result = expr; }
   else if lib.exprType expr == "lambda" then { inherit env; result = expr; }
@@ -109,8 +115,8 @@ evaluate = env: expr:
         # 'define' evaluates the second arguments and assigns it to the first symbol
         let c  = matchList ["name" "value"] cdr;
             name = assertSymbol c.name;
-            value = (evaluate (env // { ${name} = value; }) c.value).result;
-        in  { env = env // { ${name} = value; }; result = null; }
+            value = (evaluate (extendScope env { ${name} = value; }) c.value).result;
+        in  { env = extendScope env { ${name} = value; }; result = null; }
       else if car == lib.mkSymbol "quote" then
         # 'quote ' returns the only argument without evaluating
         let c  = matchList ["arg"] cdr;
@@ -130,7 +136,7 @@ evaluate = env: expr:
             name = assertSymbol c.name;
             lambda = (evaluate env c.lambda).result; # TODO: error out when this is not actually a lambda
             value = lib.mkTerm "macro" lambda;
-        in { env = env // { ${name} = value; }; result = null; }
+        in { env = extendScope env { ${name} = value; }; result = null; }
       else if car == lib.mkSymbol "__prim_if" then
         # if evaluates the first argument, if null or false, evaluates & returns the third; else the second
         let c = matchList ["cond" "if_t" "if_f"] cdr;
@@ -153,7 +159,7 @@ evaluate = env: expr:
         let c = matchList ["args" "body"] cdr;
             args = c.args;
             body = c.body;
-            result = mkLambda { inherit args body env; };
+            result = mkLambda { inherit args body; scope = env.scope; };
         in { inherit env result; }
       else
         let fun = (evaluate env expr.value.car).result;
@@ -218,11 +224,18 @@ prims = {
   __prim_get_attr = builtins.getAttr; # we need this directly to access the builtins
 };
 
+emptyEnv =
+  { scope = prims;
+    traceback = [];
+  };
+
 stdenv =
-  (evaluateProgram prims (parser.parseFile ../stdlib.nixlisp)).env;
+  (evaluateProgram emptyEnv (parser.parseFile ../stdlib.nixlisp)).env;
+
+initialEnv = scope: stdenv // { scope = stdenv.scope // scope; };
 
 in
 
 {
-  eval = env: i: (evaluateProgram (stdenv // env) i).result;
+  eval = scope: i: (evaluateProgram (initialEnv scope) i).result;
 }
