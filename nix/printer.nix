@@ -9,7 +9,7 @@ printLambdaArgs = args: # FIXME: This is not correct at all
 print = expr:
   let ty = lib.exprType expr;
   in  if ty == "symbol" then "'${expr.value}"
-      else if ty == "number" then builtins.toString expr
+      else if ty == "int" then builtins.toString expr
       else if ty == "bool" then if expr then "true" else "false"
       else if ty == "string" then "\"${expr}\"" # FIXME: escaping
       else if ty == "nil" then "nil"

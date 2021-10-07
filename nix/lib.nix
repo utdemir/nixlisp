@@ -1,7 +1,7 @@
 rec {
   exprType = expr:
     if builtins.isList expr then "vector"
-    else if builtins.isInt expr then "number"
+    else if builtins.isInt expr then "int"
     else if builtins.isNull expr then "nil"
     else if builtins.isString expr then "string"
     else if builtins.isFunction expr then "nix_function"

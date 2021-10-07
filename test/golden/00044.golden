@@ -1,0 +1,5 @@
+(concat-strings "ab" "cd")
+
+===
+
+"abcd"
