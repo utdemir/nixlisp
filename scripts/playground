@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-
-cd "$( dirname $0 )"/..
-fd . | entr -c nix-instantiate --eval --strict --show-trace -E "let n = import ./.; in n.printer.print (n.eval {} ./play.nixlisp)"
