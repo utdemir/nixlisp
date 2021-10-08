@@ -53,7 +53,15 @@ throwWithTraceback = env: msg:
   in  throw "Traceback:\n${traceback}\nError:\n  ${msg}";
 
 lambdaFunctor = self:
-  throw "TODO";
+  let go = env: bindings: arg:
+        if lib.exprType bindings == "cons"
+        then let name = assertSymbol throw bindings.value.car;
+                 env' = extendScope env { ${name} = arg; };
+             in  if bindings.value.cdr == null
+                 then (evaluate env' self.value.body).result
+                 else go env' bindings.value.cdr
+        else throw "can not export a function with zero or variable number of arguments.";
+   in go (extendScope emptyEnv self.value.scope) self.value.args;
 
 mkLambda = { args, body, scope }:
   lib.mkTerm "lambda" { inherit args body scope; }
