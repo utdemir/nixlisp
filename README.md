@@ -31,7 +31,7 @@ A lisp implementation written in Nix.
 
 ### Standard library
 
-See <./stdlib.nixlisp>.
+See [stdlib.nixlisp](./stdlib.nixlisp).
 
 ### Defining a function
 
