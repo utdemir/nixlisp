@@ -64,25 +64,24 @@
       (true                        false)))
   (go xs))
 
+;; type checks
+(defun symbol? (x) (eq? (__prim_expr_type x) "symbol"))
+(defun string? (x) (eq? (__prim_expr_type x) "string"))
+(defun int? (x) (eq? (__prim_expr_type x) "int"))
+(defun macro? (x) (eq? (__prim_expr_type x) "macro"))
+(defun vector? (x) (eq? (__prim_expr_type x) "vector"))
+(defun attrs? (x) (eq? (__prim_expr_type x) "attr"))
+
 ;; symbols
 
-(defun symbol? (x) (eq? (__prim_expr_type x) "symbol"))
 (defun symbol->string (x)
   (assert (symbol? x) "expected a symbol")
   (__prim_symbol_name x))
 
-;; strings
-
-(defun string? (x) (eq? (__prim_expr_type x) "string"))
-(defun stringish (x)
-  (cond ((string? x) x)
-        ((symbol? x) (symbol->string x))
-        (true (throw "stringish: expecting a symbol or a string"))))
-
 ;; utilities
 
 (defun builtin (name)
-  (__prim_get_attr (stringish name) __builtins))
+  (__prim_get_attr (->string name) __builtins))
 
 (defun trace (msg)
   ((builtin "trace")
@@ -96,6 +95,16 @@
          (fold-left acc
                     (acc init (car seq))
                     (cdr seq)))))
+;; strings
+
+(defun ->string (x)
+(cond ((string? x) x)
+      ((symbol? x) (__prim_symbol_name x))
+      ((int? x) ((builtin "toString") x))
+      ((eq? x true)) "true"
+      ((eq? x false)) "false"
+      ((eq? x nil)) "nil"
+      (true (throw "->string: unexpected type"))))
 
 ;; builtins
 
@@ -120,7 +129,6 @@
 
 ;; numbers
 
-(defun int? (x) (eq? (__prim_expr_type x) "int"))
 
 (defun + xs
   (defun op (x y)
@@ -162,7 +170,6 @@
 
 ;; utilities
 
-(defun macro? (x) (eq? (__prim_expr_type x) "macro"))
 (defmacro macroexpand (macro . args)
   (define evald (eval macro))
   (assert (macro? evald) (concat-strings "expecting a macro, but got " (__prim_expr_type evald)))
@@ -170,7 +177,6 @@
 
 ;; vectors
 
-(defun vector? (x) (eq? (__prim_expr_type x) "vector"))
 
 (defun list->vector (xs)
   ; FIXME This should be implemented in a faster way
@@ -191,20 +197,19 @@
 
 ;; attrsets
 
-(defun attrs? (x) (eq? (__prim_expr_type x) "attr"))
 (defun attrs xs
   (defun pairs (ys)
     (cond ((nil? ys) nil)
           ((cons? ys) (begin
                          (define name (car ys))
                          (define value (car (cdr ys)))
-                         (cons (__prim_name_value_pair (stringish name) value) (pairs (cdr (cdr ys))))))
+                         (cons (__prim_name_value_pair (->string name) value) (pairs (cdr (cdr ys))))))
           (true (throw "attrs: expensing a cons pair"))))
   ((builtin "listToAttrs") (list->vector (pairs xs))))
 
 (defun getattr (attr . path)
   (defun go (acc xs)
     (cond ((nil? xs) acc)
-          ((cons? xs) (go (__prim_get_attr (stringish (car xs)) acc) (cdr xs)))
+          ((cons? xs) (go (__prim_get_attr (->string (car xs)) acc) (cdr xs)))
           (true (throw "attr: expecting a cons list"))))
   (go attr path))

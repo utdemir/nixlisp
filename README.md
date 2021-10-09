@@ -4,8 +4,8 @@ A lisp implementation written in Nix.
 
 ## Features
 
-* No IFD, recursive Nix or anything. Just Nix.
-* Macros
+* No IFD, recursive Nix. Just plain Nix.
+* Macros (non-hygienic)
 * Nix interop
   * Shares most of its data types with Nix
   * Contains syntax support and helpers to use Nix lists and attrsets
@@ -27,11 +27,16 @@ A lisp implementation written in Nix.
   ''
 ```
 
+## Current state
+
+It's kinda-sorta working. It can use Nix values and call Nix functions. It is probably not very performant, and is easy to hit the stack limit. There standard library is pretty minimal, but since it's easy to use Nix builtins and nixpkgs functions, I do not expect it to be
+the biggest problem. PR's very welcome.
+
 ## Docs
 
 ### Standard library
 
-See [stdlib.nixlisp](./stdlib.nixlisp).
+See [stdlib.nixlisp](./stdlib.nixlisp). It is also the best place look for examples.
 
 ### Defining a function
 
@@ -41,7 +46,7 @@ See [stdlib.nixlisp](./stdlib.nixlisp).
   (+ x two))
 ```
 
-`defun` is just a macro; the above function expands to:
+`defun` is a macro; the above function expands to:
 
 ```scheme
 (define myDouble (lambda (x) 
@@ -94,12 +99,12 @@ See [stdlib.nixlisp](./stdlib.nixlisp).
 
 #### Nix compatibility
 
-* Types that are unique to Nixlisp are implemented as attribute sets with a special tag on Nix side. They are not meant to be looked inside, but you can pass them back.
+* Types that are unique to Nixlisp are implemented as attribute sets with a special tag on Nix side. They are not meant to be accessed, but you can pass them back to Nixlisp.
 * Nixlisp lambda's can be called as normal functions from the Nix side, but they have to have at least one named parameter, and can not have
-variable numbero of arguments. Macros can not be used within Nix. 
+variable numbero of arguments. Macros can not be called from Nix.
 * nix-function's can be called just as lambda's within Nixlisp. Since they are curried by default, all of the parameters will be passed to them
 one after another.
-* Attribute sets behave like functions, where you can pass them a list of string or symbols and they can do a lookup.
+* Attribute sets behave like functions, where you can pass them strings or symbols and they can do a lookup.
 * Beware that a Nixlisp "list" (a nil-terminated cons-list) is not a Nix "list". A Nix list is called a "vector", and you can use the `vector`, or `list->vector` functions to construct them.
 
 ## Thanks
