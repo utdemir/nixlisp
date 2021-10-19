@@ -4,7 +4,7 @@ A lisp implementation written in Nix.
 
 ## Features
 
-* No IFD or recursive Nix. Just plain Nix.
+* No IFD. Just plain Nix.
 * Macros (non-hygienic)
 * Nix interop
   * Shares most of its data types with Nix
